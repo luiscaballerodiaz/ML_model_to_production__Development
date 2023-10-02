@@ -64,6 +64,7 @@ preprocessor = ColumnTransformer(transformers=[('num', StandardScaler(), fnum_in
 pipeline = Pipeline([('transformer', transformer),
                      ('preprocessor', preprocessor),
                      ('classifier', LogisticRegression(random_state=0))])
+# Train pipeline and test model
 pipeline.fit(X_train, y_train)
 
 print('EXAMPLE 1:\nTest example inputs: \n{}'.format(X_test.iloc[[0]]))
