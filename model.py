@@ -1,6 +1,7 @@
 import pandas as pd
+import numpy as np
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.preprocessing import StandardScaler, OneHotEncoder, FunctionTransformer
 from sklearn.compose import ColumnTransformer
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
@@ -40,6 +41,12 @@ fnum = [x for x in X.columns.values.tolist() if x not in fcat]
 X = X.astype('string')
 X[fcat] = X[fcat].astype('category')
 X[fnum] = X[fnum].astype('float64')
+# Define features to apply log transformation and redefine column indexes for cat and num features
+flog = ['age', 'ap_hi', 'ap_lo']
+cols = flog + X.columns.values.tolist()
+cols_no_duplicates = list(dict.fromkeys(cols))
+fcat_index = [ind for ind, col in enumerate(cols_no_duplicates) if col in fcat]
+fnum_index = [ind for ind, col in enumerate(cols_no_duplicates) if col in fnum]
 # Collapse outliers for ap_hi and ap_lo at 1.5 x IQ range
 feats = ['ap_hi', 'ap_lo']
 for feat in feats:
@@ -49,10 +56,13 @@ for feat in feats:
 # Split between training and test
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
 # Define transformers per each feature
-preprocessor = ColumnTransformer(transformers=[('num', StandardScaler(), fnum),
-                                               ('cat', OneHotEncoder(drop='if_binary'), fcat)],
+transformer = ColumnTransformer(transformers=[('log', FunctionTransformer(np.log), flog)],
+                                remainder='passthrough')
+preprocessor = ColumnTransformer(transformers=[('num', StandardScaler(), fnum_index),
+                                               ('cat', OneHotEncoder(drop='if_binary'), fcat_index)],
                                  remainder='passthrough')
-pipeline = Pipeline([('preprocessor', preprocessor),
+pipeline = Pipeline([('transformer', transformer),
+                     ('preprocessor', preprocessor),
                      ('classifier', LogisticRegression(random_state=0))])
 pipeline.fit(X_train, y_train)
 
